@@ -1,5 +1,7 @@
 package ex2
 
+import scala.util.Random
+
 type Position = (Int, Int)
 enum Direction:
   case North, East, South, West
@@ -42,8 +44,32 @@ class LoggingRobot(val robot: Robot) extends Robot:
     robot.act()
     println(robot.toString)
 
+class RobotWithBattery(val robot: Robot, val batteryLevel: Double, val batteryUsagePerAction: Double) extends Robot:
+  require(batteryLevel >= 0 && batteryUsagePerAction >= 0)
+  private var remainingBattery = batteryLevel
+  export robot.{position, direction, turn}
+  override def act(): Unit = 
+    if remainingBattery < batteryUsagePerAction then throw IllegalStateException("Robot ran out of battery")
+    remainingBattery = remainingBattery - (batteryUsagePerAction)
+    robot.act()
+
+class RobotCanFail(val robot: Robot, val failChance: Double) extends Robot:
+  require(0 <= failChance && failChance <= 1)
+  var failed = false
+  export robot.{position, direction, turn}
+  override def act(): Unit =
+    failed = failed || Random.nextDouble() <= failChance 
+    if failed then throw IllegalStateException("Robot stopped working")
+    robot.act()
+
+class RobotRepeated(val robot: Robot, val repeats: Int) extends Robot:
+  require(repeats >= 0)
+  export robot.{position, direction, turn}
+  override def act(): Unit =
+    for _ <- (1 to repeats) do robot.act()
+
 @main def testRobot(): Unit =
-  val robot = LoggingRobot(SimpleRobot((0, 0), Direction.North))
+  val robot = RobotWithBattery(LoggingRobot(SimpleRobot((0, 0), Direction.North)), 1, 0.5)
   robot.act() // robot at (0, 1) facing North
   robot.turn(robot.direction.turnRight) // robot at (0, 1) facing East
   robot.act() // robot at (1, 1) facing East

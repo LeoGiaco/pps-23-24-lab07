@@ -36,3 +36,27 @@ class RobotSpec extends AnyFlatSpec with Matchers:
     robot.turn(Direction.West)
     robot.act()
     robot.position should be((0, 0))
+
+  "A RobotWithBattery" should "move until its battery runs out" in:
+    val robot = RobotWithBattery(SimpleRobot((0, 0), Direction.North), 1, 0.5)
+    robot.act()
+    robot.position should be((0, 1))
+    robot.act()
+    robot.position should be((0, 2))
+    a [IllegalStateException] should be thrownBy robot.act()
+
+  "A RobotCanFail" should "fail randomly" in:
+    val robot = RobotCanFail(SimpleRobot((0, 0), Direction.North), 0.25)
+    if robot.failChance > 0 then
+      a [IllegalStateException] should be thrownBy:
+        var pos = (0, 0) 
+        while true do
+          robot.act()
+          pos = (pos._1, pos._2 + 1)
+          robot.position should be(pos)
+
+  "A RobotRepeated" should "repeat its actions N times" in:
+    val repeats = 5
+    val robot = RobotRepeated(SimpleRobot((0, 0), Direction.North), repeats)
+    robot.act()
+    robot.position should be((0, repeats))
